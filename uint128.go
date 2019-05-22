@@ -158,7 +158,7 @@ func (u Uint128) QuoRem(v Uint128) (q, r Uint128) {
 			tq--
 		}
 		q = From64(tq)
-		// calculate remainder using trial quotient, then adjust if remainer is
+		// calculate remainder using trial quotient, then adjust if remainder is
 		// greater than divisor
 		r = u.Sub(v.Mul64(tq))
 		if r.Cmp(v) >= 0 {
