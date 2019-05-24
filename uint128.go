@@ -33,8 +33,12 @@ func (u Uint128) Equals64(v uint64) bool {
 	return u.lo == v && u.hi == 0
 }
 
-// Cmp compares two Uint128 values. The return value follows the convention of
-// math/big.
+// Cmp compares u and v and returns:
+//
+//   -1 if u <  v
+//    0 if u == v
+//   +1 if u >  v
+//
 func (u Uint128) Cmp(v Uint128) int {
 	if u == v {
 		return 0
@@ -45,7 +49,12 @@ func (u Uint128) Cmp(v Uint128) int {
 	}
 }
 
-// Cmp64 compares u to v. The return value follows the convention of math/big.
+// Cmp64 compares u and v and returns:
+//
+//   -1 if u <  v
+//    0 if u == v
+//   +1 if u >  v
+//
 func (u Uint128) Cmp64(v uint64) int {
 	if u.hi > 0 || u.lo > v {
 		return 1
