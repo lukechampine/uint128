@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"math/big"
 	"math/bits"
-	"strconv"
 )
 
 // Zero is a zero-valued uint128.
@@ -215,24 +214,22 @@ func (u Uint128) Rsh(n uint) (s Uint128) {
 
 // String returns the base-10 representation of u as a string.
 func (u Uint128) String() string {
-	buf := make([]byte, 40) // log10(2^128) < 40
-	for i := range buf {
-		buf[i] = '0'
+	if u.IsZero() {
+		return "0"
 	}
-	base := uint64(1e19)        // largest power of 10 that fits in a uint64
-	wbuf := make([]byte, 0, 20) // temporary buffer for individual "words"
-	var i int
-	for u.Cmp64(base) >= 0 {
-		q, r := u.QuoRem64(base)
-		w := strconv.AppendUint(wbuf, r, 10)
-		copy(buf[40-(i+len(w)):], w)
-		i += 19
+	buf := []byte("0000000000000000000000000000000000000000") // log10(2^128) < 40
+	for i := len(buf); ; i -= 19 {
+		q, r := u.QuoRem64(1e19) // largest power of 10 that fits in a uint64
+		var n int
+		for ; r != 0; r /= 10 {
+			n++
+			buf[i-n] = '0' + byte(r%10)
+		}
+		if q.IsZero() {
+			return string(buf[i-n:])
+		}
 		u = q
 	}
-	w := strconv.AppendUint(wbuf, u.lo, 10)
-	i += len(w)
-	copy(buf[40-i:], w)
-	return string(buf[40-i:])
 }
 
 // PutBytes stores u in b in little-endian order. It panics if len(b) < 16.

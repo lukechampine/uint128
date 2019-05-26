@@ -57,6 +57,11 @@ func TestUint128(t *testing.T) {
 		}
 	}
 
+	// Test 0 string
+	if Zero.String() != "0" {
+		t.Fatalf(`Zero.String() should be "0", got %q`, Zero.String())
+	}
+
 	// Check FromBig panics
 	checkPanic := func(fn func(), msg string) {
 		defer func() {
