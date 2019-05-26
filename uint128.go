@@ -182,8 +182,8 @@ func (u Uint128) QuoRem64(v uint64) (q Uint128, r uint64) {
 	if u.hi < v {
 		q.lo, r = bits.Div64(u.hi, u.lo, v)
 	} else {
-		q.lo, r = bits.Div64(u.hi%v, u.lo, v)
-		q.hi = u.hi / v
+		q.hi, r = bits.Div64(0, u.hi, v)
+		q.lo, r = bits.Div64(r, u.lo, v)
 	}
 	return
 }
