@@ -14,7 +14,10 @@ instead of modifying a pointer receiver. A `Uint128` value is therefore immutabl
 like `uint64` and friends.
 
 The name `uint128.Uint128` stutters, so I recommend either using a "dot import"
-or embedding/aliasing `uint128.Uint128` to give it a project-specific name.
+or aliasing `uint128.Uint128` to give it a project-specific name. Embedding the type
+is not recommended, because methods will still return `uint128.Uint128`; this means that,
+if you want to extend the type with new methods, your best bet is probably to copy the
+source code wholesale and rename the identifier. ¯\_(ツ)_/¯
 
 
 # Benchmarks
