@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"math/big"
+	"strings"
 	"testing"
 )
 
@@ -11,6 +12,26 @@ func randUint128() Uint128 {
 	randBuf := make([]byte, 16)
 	rand.Read(randBuf)
 	return FromBytes(randBuf)
+}
+
+func TestStringTooLong(t *testing.T) {
+	s := "ba95e31998f38490651c02b97c7f2acca"
+
+	_, err := FromString(s)
+
+	if err == nil || !strings.Contains(err.Error(), "too large") {
+		t.Error("did not return error for encoding invalid uint128 string")
+	}
+}
+
+func TestStringInvalidHex(t *testing.T) {
+	s := "bazz95e31998849051c02b97c7f2acca"
+
+	_, err := FromString(s)
+
+	if err == nil || !strings.Contains(err.Error(), "could not decode") {
+		t.Error("did not return error for encoding invalid uint128 string")
+	}
 }
 
 func TestUint128(t *testing.T) {
@@ -23,7 +44,8 @@ func TestUint128(t *testing.T) {
 			x = x.Lsh(64)
 		}
 
-		if FromBig(x.Big()) != x {
+		tmp, _ := FromBig(x.Big())
+		if tmp != x {
 			t.Fatal("FromBig is not the inverse of Big for", x)
 		}
 
@@ -62,18 +84,18 @@ func TestUint128(t *testing.T) {
 		t.Fatalf(`Zero.String() should be "0", got %q`, Zero.String())
 	}
 
-	// Check FromBig panics
-	checkPanic := func(fn func(), msg string) {
-		defer func() {
-			r := recover()
-			if s, ok := r.(string); !ok || s != msg {
-				t.Errorf("expected %q, got %q", msg, r)
-			}
-		}()
-		fn()
+	_, err := FromBig(big.NewInt(-1))
+
+	if err == nil || !strings.Contains(err.Error(), "cannot be negative") {
+		t.Error("did not return error for negative value")
 	}
-	checkPanic(func() { _ = FromBig(big.NewInt(-1)) }, "value cannot be negative")
-	checkPanic(func() { _ = FromBig(new(big.Int).Lsh(big.NewInt(1), 129)) }, "value overflows Uint128")
+
+	_, err = FromBig(new(big.Int).Lsh(big.NewInt(1), 129))
+
+	if err == nil || !strings.Contains(err.Error(), "overflows Uint128") {
+		t.Error("did not return error for overflow value")
+	}
+
 }
 
 func TestArithmetic(t *testing.T) {
