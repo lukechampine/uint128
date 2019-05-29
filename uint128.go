@@ -2,8 +2,11 @@ package uint128 // import "lukechampine.com/uint128"
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"math/big"
 	"math/bits"
+
+	"github.com/pkg/errors"
 )
 
 // Zero is a zero-valued uint128.
@@ -264,15 +267,34 @@ func FromBytes(b []byte) Uint128 {
 	)
 }
 
-// FromBig converts i to a Uint128 value. It panics if i is negative or
+// FromBig converts i to a Uint128 value. It returns error if i is negative or
 // overflows 128 bits.
-func FromBig(i *big.Int) (u Uint128) {
+func FromBig(i *big.Int) (u Uint128, e error) {
 	if i.Sign() < 0 {
-		panic("value cannot be negative")
+		return Uint128{}, errors.Errorf("input value %s cannot be negative", i)
 	} else if i.BitLen() > 128 {
-		panic("value overflows Uint128")
+		return Uint128{}, errors.Errorf("input value %s overflows Uint128", i)
 	}
 	u.lo = i.Uint64()
 	u.hi = new(big.Int).Rsh(i, 64).Uint64()
-	return u
+	return u, nil
+}
+
+// FromString converts s to a Uint128 value.
+func FromString(s string) (u Uint128, e error) {
+	if len(s) > 32 {
+		return Uint128{}, errors.Errorf("input string %s too large for uint128", s)
+	}
+	bytes, err := hex.DecodeString(s)
+	if err != nil {
+		return Uint128{}, errors.Wrapf(err, "could not decode %s as hex", s)
+	}
+
+	if len(bytes) < 16 {
+		bytesCopy := make([]byte, 16)
+		copy(bytesCopy[(16-len(bytes)):], bytes)
+		bytes = bytesCopy
+	}
+
+	return FromBytes(bytes), nil
 }
