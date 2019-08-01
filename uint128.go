@@ -55,12 +55,12 @@ func (u Uint128) Cmp(v Uint128) int {
 //   +1 if u >  v
 //
 func (u Uint128) Cmp64(v uint64) int {
-	if u.hi > 0 || u.lo > v {
-		return 1
-	} else if u.lo == v {
+	if u.hi == 0 && u.lo == v {
 		return 0
-	} else {
+	} else if u.hi == 0 && u.lo < v {
 		return -1
+	} else {
+		return 1
 	}
 }
 
@@ -223,7 +223,7 @@ func (u Uint128) String() string {
 		var n int
 		for ; r != 0; r /= 10 {
 			n++
-			buf[i-n] = '0' + byte(r%10)
+			buf[i-n] += byte(r % 10)
 		}
 		if q.IsZero() {
 			return string(buf[i-n:])
