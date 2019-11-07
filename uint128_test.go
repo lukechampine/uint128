@@ -51,15 +51,6 @@ func TestUint128(t *testing.T) {
 		} else if From64(x.lo).Cmp64(x.lo) != 0 {
 			t.Fatalf("%v does not equal itself", x.lo)
 		}
-
-		if x.String() != x.Big().String() {
-			t.Fatalf("mismatch:\n%v !=\n%v", x.String(), x.Big().String())
-		}
-	}
-
-	// Test 0 string
-	if Zero.String() != "0" {
-		t.Fatalf(`Zero.String() should be "0", got %q`, Zero.String())
 	}
 
 	// Check FromBig panics
@@ -159,6 +150,23 @@ func TestArithmetic(t *testing.T) {
 	}
 }
 
+func TestString(t *testing.T) {
+	for i := 0; i < 1000; i++ {
+		x := randUint128()
+		if x.String() != x.Big().String() {
+			t.Fatalf("mismatch:\n%v !=\n%v", x.String(), x.Big().String())
+		}
+	}
+	// Test 0 string
+	if Zero.String() != "0" {
+		t.Fatalf(`Zero.String() should be "0", got %q`, Zero.String())
+	}
+	// Test Max string
+	if Max.String() != "340282366920938463463374607431768211455" {
+		t.Fatalf(`Max.String() should be "0", got %q`, Max.String())
+	}
+}
+
 func BenchmarkArithmetic(b *testing.B) {
 	randBuf := make([]byte, 17)
 	randUint128 := func() Uint128 {
@@ -207,6 +215,12 @@ func BenchmarkArithmetic(b *testing.B) {
 	b.Run("Rsh", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			x.Rsh(17)
+		}
+	})
+
+	b.Run("Cmp64", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			x.Cmp64(y.lo)
 		}
 	})
 }

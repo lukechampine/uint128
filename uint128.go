@@ -2,12 +2,16 @@ package uint128 // import "lukechampine.com/uint128"
 
 import (
 	"encoding/binary"
+	"math"
 	"math/big"
 	"math/bits"
 )
 
 // Zero is a zero-valued uint128.
 var Zero Uint128
+
+// Max is the largest possible uint128 value.
+var Max = New(math.MaxUint64, math.MaxUint64)
 
 // A Uint128 is an unsigned 128-bit number.
 type Uint128 struct {
