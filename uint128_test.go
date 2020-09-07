@@ -154,7 +154,7 @@ func TestLeadingZeros(t *testing.T) {
 	tcs := []struct {
 		l     Uint128
 		r     Uint128
-		zeros uint
+		zeros int
 	}{
 		{
 			l:     New(0x00, 0xf000000000000000),

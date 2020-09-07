@@ -216,14 +216,13 @@ func (u Uint128) Rsh(n uint) (s Uint128) {
 	return
 }
 
-// LeadingZeros returns amount of leading zero bits, similarly to bits.LeadingZeros{16,32,64}
-func (u Uint128) LeadingZeros() uint {
-	prefLen := uint(bits.LeadingZeros64(u.hi))
-	if prefLen < 64 {
-		return prefLen
+// LeadingZeros returns the number of leading zero bits in u; the result
+// is 128 for u == 0.
+func (u Uint128) LeadingZeros() int {
+	if u.hi > 0 {
+		return bits.LeadingZeros64(u.hi)
 	}
-
-	return prefLen + uint(bits.LeadingZeros64(u.lo))
+	return 64 + bits.LeadingZeros64(u.lo)
 }
 
 // String returns the base-10 representation of u as a string.
