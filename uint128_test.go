@@ -150,6 +150,72 @@ func TestArithmetic(t *testing.T) {
 	}
 }
 
+func TestLeadingZeros(t *testing.T) {
+	tcs := []struct {
+		l     Uint128
+		r     Uint128
+		zeros uint
+	}{
+		{
+			l:     New(0x00, 0xf000000000000000),
+			r:     New(0x00, 0x8000000000000000),
+			zeros: 1,
+		},
+		{
+			l:     New(0x00, 0xf000000000000000),
+			r:     New(0x00, 0xc000000000000000),
+			zeros: 2,
+		},
+		{
+			l:     New(0x00, 0xf000000000000000),
+			r:     New(0x00, 0xe000000000000000),
+			zeros: 3,
+		},
+		{
+			l:     New(0x00, 0xffff000000000000),
+			r:     New(0x00, 0xff00000000000000),
+			zeros: 8,
+		},
+		{
+			l:     New(0x00, 0x000000000000ffff),
+			r:     New(0x00, 0x000000000000ff00),
+			zeros: 56,
+		},
+		{
+			l:     New(0xf000000000000000, 0x01),
+			r:     New(0x4000000000000000, 0x00),
+			zeros: 63,
+		},
+		{
+			l:     New(0xf000000000000000, 0x00),
+			r:     New(0x4000000000000000, 0x00),
+			zeros: 64,
+		},
+		{
+			l:     New(0xf000000000000000, 0x00),
+			r:     New(0x8000000000000000, 0x00),
+			zeros: 65,
+		},
+		{
+			l:     New(0x00, 0x00),
+			r:     New(0x00, 0x00),
+			zeros: 128,
+		},
+		{
+			l:     New(0x01, 0x00),
+			r:     New(0x00, 0x00),
+			zeros: 127,
+		},
+	}
+
+	for _, tc := range tcs {
+		zeros := tc.l.Xor(tc.r).LeadingZeros()
+		if zeros != tc.zeros {
+			t.Errorf("mismatch (expected: %d, got: %d)", tc.zeros, zeros)
+		}
+	}
+}
+
 func TestString(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		x := randUint128()
