@@ -34,10 +34,10 @@ func TestUint128(t *testing.T) {
 		}
 
 		if !x.Equals(x) {
-			t.Fatalf("%v does not equal itself", x.lo)
+			t.Fatalf("%v does not equal itself", x.Lo)
 		}
-		if !From64(x.lo).Equals64(x.lo) {
-			t.Fatalf("%v does not equal itself", x.lo)
+		if !From64(x.Lo).Equals64(x.Lo) {
+			t.Fatalf("%v does not equal itself", x.Lo)
 		}
 
 		if x.Cmp(y) != x.Big().Cmp(y.Big()) {
@@ -46,10 +46,10 @@ func TestUint128(t *testing.T) {
 			t.Fatalf("%v does not equal itself", x)
 		}
 
-		if x.Cmp64(y.lo) != x.Big().Cmp(From64(y.lo).Big()) {
-			t.Fatalf("mismatch: cmp64(%v,%v) should equal %v, got %v", x, y.lo, x.Big().Cmp(From64(y.lo).Big()), x.Cmp64(y.lo))
-		} else if From64(x.lo).Cmp64(x.lo) != 0 {
-			t.Fatalf("%v does not equal itself", x.lo)
+		if x.Cmp64(y.Lo) != x.Big().Cmp(From64(y.Lo).Big()) {
+			t.Fatalf("mismatch: cmp64(%v,%v) should equal %v, got %v", x, y.Lo, x.Big().Cmp(From64(y.Lo).Big()), x.Cmp64(y.Lo))
+		} else if From64(x.Lo).Cmp64(x.Lo) != 0 {
+			t.Fatalf("%v does not equal itself", x.Lo)
 		}
 	}
 
@@ -64,7 +64,7 @@ func TestUint128(t *testing.T) {
 		fn()
 	}
 	checkPanic(func() { _ = FromBig(big.NewInt(-1)) }, "value cannot be negative")
-	checkPanic(func() { _ = FromBig(new(big.Int).Lsh(big.NewInt(1), 129)) }, "value overflows Uint128")
+	checkPanic(func() { _ = FromBig(new(big.Int).Lsh(big.NewInt(1), 129)) }, "value overfLows Uint128")
 }
 
 func TestArithmetic(t *testing.T) {
@@ -73,14 +73,14 @@ func TestArithmetic(t *testing.T) {
 	randBuf := make([]byte, 17)
 	randUint128 := func() Uint128 {
 		rand.Read(randBuf)
-		var lo, hi uint64
+		var Lo, Hi uint64
 		if randBuf[16]&1 != 0 {
-			lo = binary.LittleEndian.Uint64(randBuf[:8])
+			Lo = binary.LittleEndian.Uint64(randBuf[:8])
 		}
 		if randBuf[16]&2 != 0 {
-			hi = binary.LittleEndian.Uint64(randBuf[8:])
+			Hi = binary.LittleEndian.Uint64(randBuf[8:])
 		}
-		return New(lo, hi)
+		return New(Lo, Hi)
 	}
 	mod128 := func(i *big.Int) *big.Int {
 		if i.Sign() == -1 {
@@ -93,7 +93,7 @@ func TestArithmetic(t *testing.T) {
 		return c.Big().Cmp(i) == 0
 	}
 	for i := 0; i < 1000; i++ {
-		x, y, z := randUint128(), randUint128(), uint(randUint128().lo&0xFF)
+		x, y, z := randUint128(), randUint128(), uint(randUint128().Lo&0xFF)
 		xb, yb := x.Big(), y.Big()
 		if !equalsBig(x.Add(y), mod128(new(big.Int).Add(xb, yb))) {
 			t.Fatalf("mismatch: %v+%v should equal %v, got %v", x, y, mod128(new(big.Int).Add(xb, yb)), x.Add(y))
@@ -124,7 +124,7 @@ func TestArithmetic(t *testing.T) {
 		}
 
 		// check 64-bit variants
-		y64 := y.lo
+		y64 := y.Lo
 		yb = From64(y64).Big()
 		if !equalsBig(x.Add64(y64), mod128(new(big.Int).Add(xb, yb))) {
 			t.Fatalf("mismatch: %v+%v should equal %v, got %v", x, y, mod128(new(big.Int).Add(xb, yb)), x.Add64(y64))
@@ -237,20 +237,20 @@ func BenchmarkArithmetic(b *testing.B) {
 	randBuf := make([]byte, 17)
 	randUint128 := func() Uint128 {
 		rand.Read(randBuf)
-		var lo, hi uint64
+		var Lo, Hi uint64
 		if randBuf[16]&1 != 0 {
-			lo = binary.LittleEndian.Uint64(randBuf[:8])
+			Lo = binary.LittleEndian.Uint64(randBuf[:8])
 		}
 		if randBuf[16]&2 != 0 {
-			hi = binary.LittleEndian.Uint64(randBuf[8:])
+			Hi = binary.LittleEndian.Uint64(randBuf[8:])
 		}
-		return New(lo, hi)
+		return New(Lo, Hi)
 	}
 	x, y := randUint128(), randUint128()
 
 	b.Run("Add native", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = x.lo * y.lo
+			_ = x.Lo * y.Lo
 		}
 	})
 
@@ -286,7 +286,7 @@ func BenchmarkArithmetic(b *testing.B) {
 
 	b.Run("Cmp64", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x.Cmp64(y.lo)
+			x.Cmp64(y.Lo)
 		}
 	})
 }
@@ -304,17 +304,17 @@ func BenchmarkDivision(b *testing.B) {
 
 	b.Run("native 64/64", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = x64.lo / y64.lo
+			_ = x64.Lo / y64.Lo
 		}
 	})
 	b.Run("Div64 64/64", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x64.Div64(y64.lo)
+			x64.Div64(y64.Lo)
 		}
 	})
 	b.Run("Div64 128/64", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			x128.Div64(y64.lo)
+			x128.Div64(y64.Lo)
 		}
 	})
 	b.Run("Div 64/64", func(b *testing.B) {
@@ -322,16 +322,16 @@ func BenchmarkDivision(b *testing.B) {
 			x64.Div(y64)
 		}
 	})
-	b.Run("Div 128/64-lo", func(b *testing.B) {
+	b.Run("Div 128/64-Lo", func(b *testing.B) {
 		x := x128
-		x.hi = y64.lo - 1
+		x.Hi = y64.Lo - 1
 		for i := 0; i < b.N; i++ {
 			x.Div(y64)
 		}
 	})
-	b.Run("Div 128/64-hi", func(b *testing.B) {
+	b.Run("Div 128/64-Hi", func(b *testing.B) {
 		x := x128
-		x.hi = y64.lo + 1
+		x.Hi = y64.Lo + 1
 		for i := 0; i < b.N; i++ {
 			x.Div(y64)
 		}
