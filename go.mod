@@ -1,3 +1,3 @@
-module github.com/jwasinger/uint128
+module lukechampine.com/uint128
 
 go 1.12
