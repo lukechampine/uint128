@@ -18,6 +18,14 @@ type Uint128 struct {
 	lo, hi uint64
 }
 
+func (u Uint128) Hi() uint64 {
+	return u.hi
+}
+
+func (u Uint128) Lo() uint64 {
+	return u.lo
+}
+
 // IsZero returns true if u == 0.
 func (u Uint128) IsZero() bool {
 	return u == Zero
