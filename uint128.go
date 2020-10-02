@@ -100,44 +100,44 @@ func (u Uint128) Xor64(v uint64) Uint128 {
 
 // Add returns u+v.
 func (u Uint128) Add(v Uint128) Uint128 {
-	Lo, carry := bits.Add64(u.Lo, v.Lo, 0)
-	Hi, _ := bits.Add64(u.Hi, v.Hi, carry)
-	return Uint128{Lo, Hi}
+	lo, carry := bits.Add64(u.Lo, v.Lo, 0)
+	hi, _ := bits.Add64(u.Hi, v.Hi, carry)
+	return Uint128{lo, hi}
 }
 
 // Add64 returns u+v.
 func (u Uint128) Add64(v uint64) Uint128 {
-	Lo, carry := bits.Add64(u.Lo, v, 0)
-	Hi := u.Hi + carry
-	return Uint128{Lo, Hi}
+	lo, carry := bits.Add64(u.Lo, v, 0)
+	hi := u.Hi + carry
+	return Uint128{lo, hi}
 }
 
 // Sub returns u-v.
 func (u Uint128) Sub(v Uint128) Uint128 {
-	Lo, borrow := bits.Sub64(u.Lo, v.Lo, 0)
-	Hi, _ := bits.Sub64(u.Hi, v.Hi, borrow)
-	return Uint128{Lo, Hi}
+	lo, borrow := bits.Sub64(u.Lo, v.Lo, 0)
+	hi, _ := bits.Sub64(u.Hi, v.Hi, borrow)
+	return Uint128{lo, hi}
 }
 
 // Sub64 returns u-v.
 func (u Uint128) Sub64(v uint64) Uint128 {
-	Lo, borrow := bits.Sub64(u.Lo, v, 0)
-	Hi := u.Hi - borrow
-	return Uint128{Lo, Hi}
+	lo, borrow := bits.Sub64(u.Lo, v, 0)
+	hi := u.Hi - borrow
+	return Uint128{lo, hi}
 }
 
 // Mul returns u*v.
 func (u Uint128) Mul(v Uint128) Uint128 {
-	Hi, Lo := bits.Mul64(u.Lo, v.Lo)
-	Hi += u.Hi*v.Lo + u.Lo*v.Hi
-	return Uint128{Lo, Hi}
+	hi, lo := bits.Mul64(u.Lo, v.Lo)
+	hi += u.Hi*v.Lo + u.Lo*v.Hi
+	return Uint128{lo, hi}
 }
 
 // Mul64 returns u*v.
 func (u Uint128) Mul64(v uint64) Uint128 {
-	Hi, Lo := bits.Mul64(u.Lo, v)
-	Hi += u.Hi * v
-	return Uint128{Lo, Hi}
+	hi, lo := bits.Mul64(u.Lo, v)
+	hi += u.Hi * v
+	return Uint128{lo, hi}
 }
 
 // Div returns u/v.
@@ -159,7 +159,7 @@ func (u Uint128) QuoRem(v Uint128) (q, r Uint128) {
 		q, r64 = u.QuoRem64(v.Lo)
 		r = From64(r64)
 	} else {
-		// generate a "trial quotient," guaranteed to be witHin 1 of the actual
+		// generate a "trial quotient," guaranteed to be within 1 of the actual
 		// quotient, then adjust.
 		n := uint(bits.LeadingZeros64(v.Hi))
 		v1 := v.Lsh(n)
@@ -253,18 +253,12 @@ func (u Uint128) RotateRight(k int) Uint128 {
 
 // Reverse returns the value of u with its bits in reversed order.
 func (u Uint128) Reverse() Uint128 {
-	return Uint128{
-		Lo: bits.Reverse64(u.Hi),
-		Hi: bits.Reverse64(u.Lo),
-	}
+	return Uint128{bits.Reverse64(u.Hi), bits.Reverse64(u.Lo)}
 }
 
 // ReverseBytes returns the value of u with its bytes in reversed order.
 func (u Uint128) ReverseBytes() Uint128 {
-	return Uint128{
-		Lo: bits.ReverseBytes64(u.Hi),
-		Hi: bits.ReverseBytes64(u.Lo),
-	}
+	return Uint128{bits.ReverseBytes64(u.Hi), bits.ReverseBytes64(u.Lo)}
 }
 
 // Len returns the minimum number of bits required to represent u; the result is
@@ -278,7 +272,7 @@ func (u Uint128) String() string {
 	if u.IsZero() {
 		return "0"
 	}
-	buf := []byte("0000000000000000000000000000000000000000") // Log10(2^128) < 40
+	buf := []byte("0000000000000000000000000000000000000000") // log10(2^128) < 40
 	for i := len(buf); ; i -= 19 {
 		q, r := u.QuoRem64(1e19) // largest power of 10 that fits in a uint64
 		var n int
@@ -307,7 +301,7 @@ func (u Uint128) Big() *big.Int {
 	return i
 }
 
-// New returns the Uint128 value (Lo,Hi).
+// New returns the Uint128 value (lo,hi).
 func New(lo, hi uint64) Uint128 {
 	return Uint128{lo, hi}
 }
@@ -326,12 +320,12 @@ func FromBytes(b []byte) Uint128 {
 }
 
 // FromBig converts i to a Uint128 value. It panics if i is negative or
-// overfLows 128 bits.
+// overflows 128 bits.
 func FromBig(i *big.Int) (u Uint128) {
 	if i.Sign() < 0 {
 		panic("value cannot be negative")
 	} else if i.BitLen() > 128 {
-		panic("value overfLows Uint128")
+		panic("value overflows Uint128")
 	}
 	u.Lo = i.Uint64()
 	u.Hi = new(big.Int).Rsh(i, 64).Uint64()
