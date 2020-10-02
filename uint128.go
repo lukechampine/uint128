@@ -216,13 +216,61 @@ func (u Uint128) Rsh(n uint) (s Uint128) {
 	return
 }
 
-// LeadingZeros returns the number of leading zero bits in u; the result
-// is 128 for u == 0.
+// LeadingZeros returns the number of leading zero bits in u; the result is 128
+// for u == 0.
 func (u Uint128) LeadingZeros() int {
 	if u.Hi > 0 {
 		return bits.LeadingZeros64(u.Hi)
 	}
 	return 64 + bits.LeadingZeros64(u.Lo)
+}
+
+// TrailingZeros returns the number of trailing zero bits in u; the result is
+// 128 for u == 0.
+func (u Uint128) TrailingZeros() int {
+	if u.Lo > 0 {
+		return bits.TrailingZeros64(u.Lo)
+	}
+	return 64 + bits.TrailingZeros64(u.Hi)
+}
+
+// OnesCount returns the number of one bits ("population count") in u.
+func (u Uint128) OnesCount() int {
+	return bits.OnesCount64(u.Hi) + bits.OnesCount64(u.Lo)
+}
+
+// RotateLeft returns the value of u rotated left by (k mod 128) bits.
+func (u Uint128) RotateLeft(k int) Uint128 {
+	const n = 128
+	s := uint(k) & (n - 1)
+	return u.Lsh(s).Or(u.Rsh(n - s))
+}
+
+// RotateRight returns the value of u rotated left by (k mod 128) bits.
+func (u Uint128) RotateRight(k int) Uint128 {
+	return u.RotateLeft(-k)
+}
+
+// Reverse returns the value of u with its bits in reversed order.
+func (u Uint128) Reverse() Uint128 {
+	return Uint128{
+		Lo: bits.Reverse64(u.Hi),
+		Hi: bits.Reverse64(u.Lo),
+	}
+}
+
+// ReverseBytes returns the value of u with its bytes in reversed order.
+func (u Uint128) ReverseBytes() Uint128 {
+	return Uint128{
+		Lo: bits.ReverseBytes64(u.Hi),
+		Hi: bits.ReverseBytes64(u.Lo),
+	}
+}
+
+// Len returns the minimum number of bits required to represent u; the result is
+// 0 for u == 0.
+func (u Uint128) Len() int {
+	return 128 - u.LeadingZeros()
 }
 
 // String returns the base-10 representation of u as a string.
@@ -288,74 +336,4 @@ func FromBig(i *big.Int) (u Uint128) {
 	u.Lo = i.Uint64()
 	u.Hi = new(big.Int).Rsh(i, 64).Uint64()
 	return u
-}
-
-// Len returns the minimum number of bits required to represent u
-func Len(u Uint128) int {
-	if u.Hi == 0 {
-		return bits.Len64(u.Lo)
-	}
-	return 64 + bits.Len64(u.Hi)
-}
-
-// OnesCount returns the number of one bits in u.
-func OnesCount(u Uint128) int {
-	return bits.OnesCount64(u.Hi) + bits.OnesCount64(u.Lo)
-}
-
-// Reverse128 returns the value of u with its bits in reversed order
-func Reverse(u Uint128) (v Uint128) {
-	v.Lo, v.Hi = bits.Reverse64(u.Hi), bits.Reverse64(u.Lo)
-	return
-} 
-
-// ReverseBytes returns the value of u with its bytes in reverse order.
-func ReverseBytes(u Uint128) (v Uint128) {
-	v.Lo, v.Hi = bits.ReverseBytes64(u.Hi), bits.ReverseBytes64(u.Hi)
-}
-
-//RotateLeft returns the value of u rotated left by (k mod 128) bits.
-// To Rotate u by k bits, call RotateLeft(u, -k)  
-func RotateLeft(u Uint128, k uint) Uint128 {
-	switch {
-	case k >= 128:
-		u.Hi = 0
-		u.Lo = 0
-	case k >= 64:
-		u.Hi = u.Lo << (k - 64)
-		u.Lo = 0
-	default:
-		u.Hi <<= k
-		u.Hi |= u.Lo >> (64 - k)
-		u.Lo <<= k
-	}
-
-	return u
-}
-
-//RotateRight returns the value of u rotated left by (k mod 128) bits.
-// To Rotate u by k bits, call RotateRight(u, k)  
-func RotateRight(u Uint128, k uint) Uint128 {
-	switch {
-	case k >= 128:
-		u.Hi = 0
-		u.Lo = 0
-	case k >= 64:
-		u.Lo = u.Hi >> (k - 64)
-		u.Hi = 0
-	default:
-		u.Lo >>= k
-		u.Lo |= u.Hi << (64 - k)
-		u.Hi >>= k
-	}
-
-	return u
-}
-
-// TrailingZeros returns the number of trailing zero bits in u.
-func TrailingZeros(u Uint128) int {
-	if u.Lo == 0 {
-		return bits.TrailingZeros64(u.Hi) + 64
-	}
-	return bits.TrailingZeros64(u.Lo)
 }
