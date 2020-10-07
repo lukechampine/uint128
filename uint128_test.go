@@ -377,3 +377,115 @@ func BenchmarkString(b *testing.B) {
 		}
 	})
 }
+
+func TestTrailingZeros(b *testing.B) {
+		ntz := tab[i].ntz
+		for k:=0; k<128-8;k++ {
+			x := uint128(i) << uint(k)
+			want := ntz+k
+			if x<=1<<128-1 {
+				got:= TrailingZeros128(uint128(x))
+				if x == 0 {
+					want = 128
+				}
+				if got != want {
+					b.Fatalf("TrailingZeros128%#032x) == %d; want %d", x, got, want)
+				}
+				if UintSize == 64 {
+					got = TrailingZeros(uint(x))
+					if got != want {
+						b.Fatalf("TrailingZeros(%#032x) == %d; want %d", x, got, want)
+					}
+			    }
+		    }
+	    }
+}
+
+func BenchmarkTrailingZeros128(b *testing.B) {
+	var x uint128
+	for i:=0; i<b.N; i++ {
+		s += TrailingZeros128(uint128(Input) << (uint(i)%128))
+	}
+	Ouput = s
+}
+
+func TestOnesCount(b *testing.B) {
+	var x uint128
+	for i := 0; i <= 128; i++ {
+		testOnesCount(b, x, i)
+		x = x<<1 | 1
+	}
+
+	for i := 128; i >= 0; i-- {
+		testOnesCount(b, x, i)
+		x = x << 1
+	}
+
+	for i := 0; i < 256; i++ {
+		for k := 0; k < 128-8; k++ {
+			testOnesCount(b, uint128(i)<<uint(k), tab[i].pop)
+		}
+	}
+}
+
+func testOnesCount(b *testing.B, x uint128, want int) {
+	if x <= 1<<128-1 {
+		got := OnesCount128(uint128(x))
+		if got != want {
+			b.Fatalf("OnesCount128(%#032x) == %d; want %d", x, got, want)
+		}
+		if UintSize == 128 {
+			got = OnesCount(uint(x))
+			if got != want {
+				b.Fatalf("OnesCount(%#032x) == %d; want %d", x, got, want)
+			}
+		}
+	}
+}
+
+func BenchmarkOnesCount128(b *testing.B) {
+	var s int
+	for i := 0; i < b.N; i++ {
+		s += OnesCount128(uint128(Input))
+	}
+	Output = s
+}
+
+func TestRotateLeft(t *testing.T) {
+	var m uint128 = DeBruijn128
+
+	for k := uint(0); k < 256; k++ {
+
+		x128 := uint128(m)
+		got128 := RotateLeft128(x128, int(k))
+		want128 := x128<<(k&0x7f) | x128>>(128-k&0x7f)
+		if got128 != want128 {
+			t.Fatalf("RotateLeft128(%#032x, %d) == %#032x; want %#032x", x128, k, got128, want128)
+		}
+		got128 = RotateLeft128(want128, -int(k))
+		if got128 != x128 {
+			t.Fatalf("RotateLeft128(%#032x, -%d) == %#032x; want %#032x", want128, k, got128, x128)
+		}
+		if UintSize == 128 {
+			x := uint(m)
+			got := RotateLeft(x, int(k))
+			want := x<<(k&0x3f) | x>>(128-k&0x3f)
+			if got != want {
+				t.Fatalf("RotateLeft(%#032x, %d) == %#032x; want %#032x", x, k, got, want)
+			}
+			got = RotateLeft(want, -int(k))
+			if got != x {
+				t.Fatalf("RotateLeft(%#016x, -%d) == %#016x; want %#016x", want, k, got, x)
+			}
+		}
+	}
+}
+
+
+func BenchmarkRotateLeft128(b *testing.B) {
+	var s uint128
+	for i := 0; i < b.N; i++ {
+		s += RotateLeft128(uint128(Input), i)
+	}
+	Output = int(s)
+}
