@@ -192,6 +192,18 @@ func (u Uint128) QuoRem64(v uint64) (q Uint128, r uint64) {
 	return
 }
 
+// Mod returns r = u%v.
+func (u Uint128) Mod(v Uint128) (r Uint128) {
+	_, r = u.QuoRem(v)
+	return
+}
+
+// Mod64 returns r = u%v.
+func (u Uint128) Mod64(v uint64) (r uint64) {
+	_, r = u.QuoRem64(v)
+	return
+}
+
 // Lsh returns u<<n.
 func (u Uint128) Lsh(n uint) (s Uint128) {
 	if n > 64 {

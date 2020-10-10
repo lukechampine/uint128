@@ -101,6 +101,9 @@ func TestArithmetic(t *testing.T) {
 		if !equalsBig(x.Sub(y), mod128(new(big.Int).Sub(xb, yb))) {
 			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Sub(xb, yb)), x.Sub(y))
 		}
+		if !y.IsZero() && !equalsBig(x.Mod(y), mod128(new(big.Int).Mod(xb, yb))) {
+			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Mod(xb, yb)), x.Mod(y))
+		}
 		if !equalsBig(x.Mul(y), mod128(new(big.Int).Mul(xb, yb))) {
 			t.Fatalf("mismatch: %v*%v should equal %v, got %v", x, y, mod128(new(big.Int).Mul(xb, yb)), x.Mul(y))
 		}
@@ -123,6 +126,9 @@ func TestArithmetic(t *testing.T) {
 			t.Fatalf("mismatch: %v ^ %v should equal %v, got %v", x, y, mod128(new(big.Int).Xor(xb, yb)), x.Xor(y))
 		}
 
+		equalsBig64 := func(c uint64, i *big.Int) bool {
+			return From64(c).Big().Cmp(i) == 0
+		}
 		// check 64-bit variants
 		y64 := y.Lo
 		yb = From64(y64).Big()
@@ -131,6 +137,9 @@ func TestArithmetic(t *testing.T) {
 		}
 		if !equalsBig(x.Sub64(y64), mod128(new(big.Int).Sub(xb, yb))) {
 			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Sub(xb, yb)), x.Sub64(y64))
+		}
+		if y64 != 0 && !equalsBig64(x.Mod64(y64), mod128(new(big.Int).Mod(xb, yb))) {
+			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Mod(xb, yb)), x.Mod(y))
 		}
 		if !equalsBig(x.Mul64(y64), mod128(new(big.Int).Mul(xb, yb))) {
 			t.Fatalf("mismatch: %v*%v should equal %v, got %v", x, y, mod128(new(big.Int).Mul(xb, yb)), x.Mul64(y64))
