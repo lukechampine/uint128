@@ -100,51 +100,56 @@ func (u Uint128) Xor64(v uint64) Uint128 {
 
 // Add returns u+v.
 func (u Uint128) Add(v Uint128) Uint128 {
-	if u.Cmp(Max.Sub(v)) == 1 {
+	lo, carry := bits.Add64(u.Lo, v.Lo, 0)
+	hi, carry := bits.Add64(u.Hi, v.Hi, carry)
+	if carry == 1 {
 		panic("Value being added is greater than max allowable number, causes overflow")
 	}
-	lo, carry := bits.Add64(u.Lo, v.Lo, 0)
-	hi, _ := bits.Add64(u.Hi, v.Hi, carry)
 	return Uint128{lo, hi}
 }
 
 // Add64 returns u+v.
 func (u Uint128) Add64(v uint64) Uint128 {
-	if u.Cmp(Max.Sub64(v)) == 1 {
+	lo, carry := bits.Add64(u.Lo, v, 0)
+	hi, carry := bits.Add64(u.Hi, carry, 0)
+	if carry == 1 {
 		panic("Value being added is greater than max allowable number, causes overflow")
 	}
-	lo, carry := bits.Add64(u.Lo, v, 0)
-	hi := u.Hi + carry
 	return Uint128{lo, hi}
 }
 
 // Sub returns u-v.
 func (u Uint128) Sub(v Uint128) Uint128 {
-	if u.Cmp(v) == -1 {
-		panic("Value being subtracted is greater than the number, causes underflow")
-	}
 	lo, borrow := bits.Sub64(u.Lo, v.Lo, 0)
-	hi, _ := bits.Sub64(u.Hi, v.Hi, borrow)
+	hi, borrow := bits.Sub64(u.Hi, v.Hi, borrow)
+	if borrow == 1 {
+		panic("Value being subtracted is greater than max allowable number, causes underflow")
+	}
 	return Uint128{lo, hi}
 }
 
 // Sub64 returns u-v.
 func (u Uint128) Sub64(v uint64) Uint128 {
-	if u.Cmp64(v) == -1 {
-		panic("Value being subtracted is greater than the number, causes underflow")
-	}
 	lo, borrow := bits.Sub64(u.Lo, v, 0)
-	hi := u.Hi - borrow
+	hi, borrow := bits.Sub64(u.Hi, borrow, 0)
+	if borrow == 1 {
+		panic("Value being subtracted is greater than max allowable number, causes underflow")
+	}
 	return Uint128{lo, hi}
 }
 
 // Mul returns u*v.
 func (u Uint128) Mul(v Uint128) Uint128 {
-	if u.Cmp(Max.Div(v)) == 1 {
+	hi, lo := bits.Mul64(u.Lo, v.Lo)
+	p0, p1 := bits.Mul64(u.Hi, v.Lo)
+	if p0 != 0 {
 		panic("Value being multiplied causes overflow")
 	}
-	hi, lo := bits.Mul64(u.Lo, v.Lo)
-	hi += u.Hi*v.Lo + u.Lo*v.Hi
+	p0, p2 := bits.Mul64(u.Lo, v.Hi)
+	if p0 != 0 {
+		panic("Value being multiplied causes overflow")
+	}
+	hi += p1 + p2
 	return Uint128{lo, hi}
 }
 
