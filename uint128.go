@@ -155,11 +155,12 @@ func (u Uint128) Mul(v Uint128) Uint128 {
 
 // Mul64 returns u*v.
 func (u Uint128) Mul64(v uint64) Uint128 {
-	if u.Cmp(Max.Div64(v)) == 1 {
+	hi, lo := bits.Mul64(u.Lo, v)
+	p0, p1 := bits.Mul64(u.Hi, v)
+	if p0 != 0 {
 		panic("Value being multiplied causes overflow")
 	}
-	hi, lo := bits.Mul64(u.Lo, v)
-	hi += u.Hi * v
+	hi += p1
 	return Uint128{lo, hi}
 }
 
