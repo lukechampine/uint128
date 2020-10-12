@@ -102,8 +102,8 @@ func (u Uint128) Xor64(v uint64) Uint128 {
 func (u Uint128) Add(v Uint128) Uint128 {
 	lo, carry := bits.Add64(u.Lo, v.Lo, 0)
 	hi, carry := bits.Add64(u.Hi, v.Hi, carry)
-	if carry == 1 {
-		panic("Value being added is greater than max allowable number, causes overflow")
+	if carry != 0 {
+		panic("overflow")
 	}
 	return Uint128{lo, hi}
 }
@@ -111,9 +111,9 @@ func (u Uint128) Add(v Uint128) Uint128 {
 // Add64 returns u+v.
 func (u Uint128) Add64(v uint64) Uint128 {
 	lo, carry := bits.Add64(u.Lo, v, 0)
-	hi, carry := bits.Add64(u.Hi, carry, 0)
-	if carry == 1 {
-		panic("Value being added is greater than max allowable number, causes overflow")
+	hi, carry := bits.Add64(u.Hi, 0, carry)
+	if carry != 0 {
+		panic("overflow")
 	}
 	return Uint128{lo, hi}
 }
@@ -122,8 +122,8 @@ func (u Uint128) Add64(v uint64) Uint128 {
 func (u Uint128) Sub(v Uint128) Uint128 {
 	lo, borrow := bits.Sub64(u.Lo, v.Lo, 0)
 	hi, borrow := bits.Sub64(u.Hi, v.Hi, borrow)
-	if borrow == 1 {
-		panic("Value being subtracted is greater than max allowable number, causes underflow")
+	if borrow != 0 {
+		panic("underflow")
 	}
 	return Uint128{lo, hi}
 }
@@ -131,36 +131,44 @@ func (u Uint128) Sub(v Uint128) Uint128 {
 // Sub64 returns u-v.
 func (u Uint128) Sub64(v uint64) Uint128 {
 	lo, borrow := bits.Sub64(u.Lo, v, 0)
-	hi, borrow := bits.Sub64(u.Hi, borrow, 0)
-	if borrow == 1 {
-		panic("Value being subtracted is greater than max allowable number, causes underflow")
+	hi, borrow := bits.Sub64(u.Hi, 0, borrow)
+	if borrow != 0 {
+		panic(" underflow")
 	}
 	return Uint128{lo, hi}
 }
 
 // Mul returns u*v.
 func (u Uint128) Mul(v Uint128) Uint128 {
+	// NOTE: this is the overflow-checked version of:
+	//
+	//    hi, lo := bits.Mul64(u.Lo, v.Lo)
+	//    hi += u.Hi*v.Lo + u.Lo*v.Hi
+	//
 	hi, lo := bits.Mul64(u.Lo, v.Lo)
 	p0, p1 := bits.Mul64(u.Hi, v.Lo)
-	if p0 != 0 {
-		panic("Value being multiplied causes overflow")
+	p2, p3 := bits.Mul64(u.Lo, v.Hi)
+	hi, c0 := bits.Add64(hi, p1, 0)
+	hi, c1 := bits.Add64(hi, p3, 0)
+	if p0 != 0 || p2 != 0 || c0 != 0 || c1 != 0 {
+		panic("overflow")
 	}
-	p0, p2 := bits.Mul64(u.Lo, v.Hi)
-	if p0 != 0 {
-		panic("Value being multiplied causes overflow")
-	}
-	hi += p1 + p2
 	return Uint128{lo, hi}
 }
 
 // Mul64 returns u*v.
 func (u Uint128) Mul64(v uint64) Uint128 {
+	// NOTE: this is the overflow-checked version of:
+	//
+	//    hi, lo := bits.Mul64(u.Lo, v)
+	//    hi += u.Hi * v
+	//
 	hi, lo := bits.Mul64(u.Lo, v)
 	p0, p1 := bits.Mul64(u.Hi, v)
-	if p0 != 0 {
-		panic("Value being multiplied causes overflow")
+	hi, c0 := bits.Add64(hi, p1, 0)
+	if p0 != 0 || c0 != 0 {
+		panic("overflow")
 	}
-	hi += p1
 	return Uint128{lo, hi}
 }
 
