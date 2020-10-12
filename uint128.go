@@ -101,42 +101,66 @@ func (u Uint128) Xor64(v uint64) Uint128 {
 // Add returns u+v.
 func (u Uint128) Add(v Uint128) Uint128 {
 	lo, carry := bits.Add64(u.Lo, v.Lo, 0)
-	hi, _ := bits.Add64(u.Hi, v.Hi, carry)
+	hi, carry := bits.Add64(u.Hi, v.Hi, carry)
+	if carry == 1 {
+		panic("Value being added is greater than max allowable number, causes overflow")
+	}
 	return Uint128{lo, hi}
 }
 
 // Add64 returns u+v.
 func (u Uint128) Add64(v uint64) Uint128 {
 	lo, carry := bits.Add64(u.Lo, v, 0)
-	hi := u.Hi + carry
+	hi, carry := bits.Add64(u.Hi, carry, 0)
+	if carry == 1 {
+		panic("Value being added is greater than max allowable number, causes overflow")
+	}
 	return Uint128{lo, hi}
 }
 
 // Sub returns u-v.
 func (u Uint128) Sub(v Uint128) Uint128 {
 	lo, borrow := bits.Sub64(u.Lo, v.Lo, 0)
-	hi, _ := bits.Sub64(u.Hi, v.Hi, borrow)
+	hi, borrow := bits.Sub64(u.Hi, v.Hi, borrow)
+	if borrow == 1 {
+		panic("Value being subtracted is greater than max allowable number, causes underflow")
+	}
 	return Uint128{lo, hi}
 }
 
 // Sub64 returns u-v.
 func (u Uint128) Sub64(v uint64) Uint128 {
 	lo, borrow := bits.Sub64(u.Lo, v, 0)
-	hi := u.Hi - borrow
+	hi, borrow := bits.Sub64(u.Hi, borrow, 0)
+	if borrow == 1 {
+		panic("Value being subtracted is greater than max allowable number, causes underflow")
+	}
 	return Uint128{lo, hi}
 }
 
 // Mul returns u*v.
 func (u Uint128) Mul(v Uint128) Uint128 {
 	hi, lo := bits.Mul64(u.Lo, v.Lo)
-	hi += u.Hi*v.Lo + u.Lo*v.Hi
+	p0, p1 := bits.Mul64(u.Hi, v.Lo)
+	if p0 != 0 {
+		panic("Value being multiplied causes overflow")
+	}
+	p0, p2 := bits.Mul64(u.Lo, v.Hi)
+	if p0 != 0 {
+		panic("Value being multiplied causes overflow")
+	}
+	hi += p1 + p2
 	return Uint128{lo, hi}
 }
 
 // Mul64 returns u*v.
 func (u Uint128) Mul64(v uint64) Uint128 {
 	hi, lo := bits.Mul64(u.Lo, v)
-	hi += u.Hi * v
+	p0, p1 := bits.Mul64(u.Hi, v)
+	if p0 != 0 {
+		panic("Value being multiplied causes overflow")
+	}
+	hi += p1
 	return Uint128{lo, hi}
 }
 

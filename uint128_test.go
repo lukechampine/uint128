@@ -3,6 +3,7 @@ package uint128
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"math"
 	"math/big"
 	"testing"
 )
@@ -157,6 +158,27 @@ func TestArithmetic(t *testing.T) {
 			t.Fatalf("mismatch: %v ^ %v should equal %v, got %v", x, y, mod128(new(big.Int).Xor(xb, yb)), x.Xor64(y64))
 		}
 	}
+}
+
+func TestOverflowAndUnderflow(t *testing.T) {
+	x := New(math.MaxUint64, math.MaxUint64)
+	y := New(10, 10)
+	z := From64(10)
+	checkPanic := func(fn func(), msg string) {
+		defer func() {
+			r := recover()
+			if s, ok := r.(string); !ok || s != msg {
+				t.Errorf("expected %q, got %q", msg, r)
+			}
+		}()
+		fn()
+	}
+	checkPanic(func() { _ = x.Add(y) }, "Value being added is greater than max allowable number, causes overflow")
+	checkPanic(func() { _ = x.Add64(10) }, "Value being added is greater than max allowable number, causes overflow")
+	checkPanic(func() { _ = y.Sub(x) }, "Value being subtracted is greater than max allowable number, causes underflow")
+	checkPanic(func() { _ = z.Sub64(math.MaxInt64) }, "Value being subtracted is greater than max allowable number, causes underflow")
+	checkPanic(func() { _ = x.Mul(y) }, "Value being multiplied causes overflow")
+	checkPanic(func() { _ = x.Mul64(math.MaxInt64) }, "Value being multiplied causes overflow")
 }
 
 func TestLeadingZeros(t *testing.T) {
