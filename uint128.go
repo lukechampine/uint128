@@ -108,6 +108,14 @@ func (u Uint128) Add(v Uint128) Uint128 {
 	return Uint128{lo, hi}
 }
 
+// AddWrap returns u+v with wraparound semantics; for example,
+// Max.AddWrap(From64(1)) == Zero.
+func (u Uint128) AddWrap(v Uint128) Uint128 {
+	lo, carry := bits.Add64(u.Lo, v.Lo, 0)
+	hi, _ := bits.Add64(u.Hi, v.Hi, carry)
+	return Uint128{lo, hi}
+}
+
 // Add64 returns u+v.
 func (u Uint128) Add64(v uint64) Uint128 {
 	lo, carry := bits.Add64(u.Lo, v, 0)
@@ -115,6 +123,14 @@ func (u Uint128) Add64(v uint64) Uint128 {
 	if carry != 0 {
 		panic("overflow")
 	}
+	return Uint128{lo, hi}
+}
+
+// AddWrap64 returns u+v with wraparound semantics; for example,
+// Max.AddWrap64(1) == Zero.
+func (u Uint128) AddWrap64(v uint64) Uint128 {
+	lo, carry := bits.Add64(u.Lo, v, 0)
+	hi := u.Hi + carry
 	return Uint128{lo, hi}
 }
 
@@ -128,23 +144,34 @@ func (u Uint128) Sub(v Uint128) Uint128 {
 	return Uint128{lo, hi}
 }
 
+// SubWrap returns u-v with wraparound semantics; for example,
+// Zero.SubWrap(From64(1)) == Max.
+func (u Uint128) SubWrap(v Uint128) Uint128 {
+	lo, borrow := bits.Sub64(u.Lo, v.Lo, 0)
+	hi, _ := bits.Sub64(u.Hi, v.Hi, borrow)
+	return Uint128{lo, hi}
+}
+
 // Sub64 returns u-v.
 func (u Uint128) Sub64(v uint64) Uint128 {
 	lo, borrow := bits.Sub64(u.Lo, v, 0)
 	hi, borrow := bits.Sub64(u.Hi, 0, borrow)
 	if borrow != 0 {
-		panic(" underflow")
+		panic("underflow")
 	}
+	return Uint128{lo, hi}
+}
+
+// SubWrap64 returns u-v with wraparound semantics; for example,
+// Zero.SubWrap64(1) == Max.
+func (u Uint128) SubWrap64(v uint64) Uint128 {
+	lo, borrow := bits.Sub64(u.Lo, v, 0)
+	hi := u.Hi - borrow
 	return Uint128{lo, hi}
 }
 
 // Mul returns u*v.
 func (u Uint128) Mul(v Uint128) Uint128 {
-	// NOTE: this is the overflow-checked version of:
-	//
-	//    hi, lo := bits.Mul64(u.Lo, v.Lo)
-	//    hi += u.Hi*v.Lo + u.Lo*v.Hi
-	//
 	hi, lo := bits.Mul64(u.Lo, v.Lo)
 	p0, p1 := bits.Mul64(u.Hi, v.Lo)
 	p2, p3 := bits.Mul64(u.Lo, v.Hi)
@@ -156,19 +183,30 @@ func (u Uint128) Mul(v Uint128) Uint128 {
 	return Uint128{lo, hi}
 }
 
-// Mul64 returns u*v.
+// MulWrap returns u*v with wraparound semantics; for example,
+// Max.MulWrap(Max) == 1.
+func (u Uint128) MulWrap(v Uint128) Uint128 {
+	hi, lo := bits.Mul64(u.Lo, v.Lo)
+	hi += u.Hi*v.Lo + u.Lo*v.Hi
+	return Uint128{lo, hi}
+}
+
+// Mul64 returns u*v, panicking on overflow.
 func (u Uint128) Mul64(v uint64) Uint128 {
-	// NOTE: this is the overflow-checked version of:
-	//
-	//    hi, lo := bits.Mul64(u.Lo, v)
-	//    hi += u.Hi * v
-	//
 	hi, lo := bits.Mul64(u.Lo, v)
 	p0, p1 := bits.Mul64(u.Hi, v)
 	hi, c0 := bits.Add64(hi, p1, 0)
 	if p0 != 0 || c0 != 0 {
 		panic("overflow")
 	}
+	return Uint128{lo, hi}
+}
+
+// MulWrap64 returns u*v with wraparound semantics; for example,
+// Max.MulWrap64(2) == Max.Sub64(1).
+func (u Uint128) MulWrap64(v uint64) Uint128 {
+	hi, lo := bits.Mul64(u.Lo, v)
+	hi += u.Hi * v
 	return Uint128{lo, hi}
 }
 

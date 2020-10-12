@@ -65,7 +65,7 @@ func TestUint128(t *testing.T) {
 		fn()
 	}
 	checkPanic(func() { _ = FromBig(big.NewInt(-1)) }, "value cannot be negative")
-	checkPanic(func() { _ = FromBig(new(big.Int).Lsh(big.NewInt(1), 129)) }, "value overfLows Uint128")
+	checkPanic(func() { _ = FromBig(new(big.Int).Lsh(big.NewInt(1), 129)) }, "value overflows Uint128")
 }
 
 func TestArithmetic(t *testing.T) {
@@ -84,84 +84,73 @@ func TestArithmetic(t *testing.T) {
 		return New(Lo, Hi)
 	}
 	mod128 := func(i *big.Int) *big.Int {
+		// wraparound semantics
 		if i.Sign() == -1 {
 			i = i.Add(new(big.Int).Lsh(big.NewInt(1), 128), i)
 		}
 		_, rem := i.QuoRem(i, new(big.Int).Lsh(big.NewInt(1), 128), new(big.Int))
 		return rem
 	}
-	equalsBig := func(c Uint128, i *big.Int) bool {
-		return c.Big().Cmp(i) == 0
+	checkBinOp := func(x Uint128, op string, y Uint128, fn func(x, y Uint128) Uint128, fnb func(z, x, y *big.Int) *big.Int) {
+		t.Helper()
+		r := fn(x, y)
+		rb := mod128(fnb(new(big.Int), x.Big(), y.Big()))
+		if r.Big().Cmp(rb) != 0 {
+			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, y, rb, r)
+		}
+	}
+	checkShiftOp := func(x Uint128, op string, n uint, fn func(x Uint128, n uint) Uint128, fnb func(z, x *big.Int, n uint) *big.Int) {
+		t.Helper()
+		r := fn(x, n)
+		rb := mod128(fnb(new(big.Int), x.Big(), n))
+		if r.Big().Cmp(rb) != 0 {
+			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, n, rb, r)
+		}
+	}
+	checkBinOp64 := func(x Uint128, op string, y uint64, fn func(x Uint128, y uint64) Uint128, fnb func(z, x, y *big.Int) *big.Int) {
+		t.Helper()
+		xb, yb := x.Big(), From64(y).Big()
+		r := fn(x, y)
+		rb := mod128(fnb(new(big.Int), xb, yb))
+		if r.Big().Cmp(rb) != 0 {
+			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, y, rb, r)
+		}
 	}
 	for i := 0; i < 1000; i++ {
 		x, y, z := randUint128(), randUint128(), uint(randUint128().Lo&0xFF)
-		xb, yb := x.Big(), y.Big()
-		if !equalsBig(x.Add(y), mod128(new(big.Int).Add(xb, yb))) {
-			t.Fatalf("mismatch: %v+%v should equal %v, got %v", x, y, mod128(new(big.Int).Add(xb, yb)), x.Add(y))
+		checkBinOp(x, "+", y, Uint128.AddWrap, (*big.Int).Add)
+		checkBinOp(x, "-", y, Uint128.SubWrap, (*big.Int).Sub)
+		checkBinOp(x, "*", y, Uint128.MulWrap, (*big.Int).Mul)
+		if !y.IsZero() {
+			checkBinOp(x, "/", y, Uint128.Div, (*big.Int).Div)
+			checkBinOp(x, "%", y, Uint128.Mod, (*big.Int).Mod)
 		}
-		if !equalsBig(x.Sub(y), mod128(new(big.Int).Sub(xb, yb))) {
-			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Sub(xb, yb)), x.Sub(y))
-		}
-		if !y.IsZero() && !equalsBig(x.Mod(y), mod128(new(big.Int).Mod(xb, yb))) {
-			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Mod(xb, yb)), x.Mod(y))
-		}
-		if !equalsBig(x.Mul(y), mod128(new(big.Int).Mul(xb, yb))) {
-			t.Fatalf("mismatch: %v*%v should equal %v, got %v", x, y, mod128(new(big.Int).Mul(xb, yb)), x.Mul(y))
-		}
-		if !y.IsZero() && !equalsBig(x.Div(y), mod128(new(big.Int).Div(xb, yb))) {
-			t.Fatalf("mismatch: %v/%v should equal %v, got %v", x, y, mod128(new(big.Int).Div(xb, yb)), x.Div(y))
-		}
-		if !equalsBig(x.Lsh(uint(z)), mod128(new(big.Int).Lsh(xb, uint(z)))) {
-			t.Fatalf("mismatch: %v<<%v should equal %v, got %v", x, y, mod128(new(big.Int).Lsh(xb, uint(z))), x.Lsh(uint(z)))
-		}
-		if !equalsBig(x.Rsh(uint(z)), mod128(new(big.Int).Rsh(xb, uint(z)))) {
-			t.Fatalf("mismatch: %v>>%v should equal %v, got %v", x, y, mod128(new(big.Int).Rsh(xb, uint(z))), x.Rsh(uint(z)))
-		}
-		if !equalsBig(x.And(y), mod128(new(big.Int).And(xb, yb))) {
-			t.Fatalf("mismatch: %v & %v should equal %v, got %v", x, y, mod128(new(big.Int).And(xb, yb)), x.And(y))
-		}
-		if !equalsBig(x.Or(y), mod128(new(big.Int).Or(xb, yb))) {
-			t.Fatalf("mismatch: %v | %v should equal %v, got %v", x, y, mod128(new(big.Int).Or(xb, yb)), x.Or(y))
-		}
-		if !equalsBig(x.Xor(y), mod128(new(big.Int).Xor(xb, yb))) {
-			t.Fatalf("mismatch: %v ^ %v should equal %v, got %v", x, y, mod128(new(big.Int).Xor(xb, yb)), x.Xor(y))
-		}
+		checkBinOp(x, "&", y, Uint128.And, (*big.Int).And)
+		checkBinOp(x, "|", y, Uint128.Or, (*big.Int).Or)
+		checkBinOp(x, "^", y, Uint128.Xor, (*big.Int).Xor)
+		checkShiftOp(x, "<<", z, Uint128.Lsh, (*big.Int).Lsh)
+		checkShiftOp(x, ">>", z, Uint128.Rsh, (*big.Int).Rsh)
 
-		equalsBig64 := func(c uint64, i *big.Int) bool {
-			return From64(c).Big().Cmp(i) == 0
-		}
 		// check 64-bit variants
 		y64 := y.Lo
-		yb = From64(y64).Big()
-		if !equalsBig(x.Add64(y64), mod128(new(big.Int).Add(xb, yb))) {
-			t.Fatalf("mismatch: %v+%v should equal %v, got %v", x, y, mod128(new(big.Int).Add(xb, yb)), x.Add64(y64))
+		checkBinOp64(x, "+", y64, Uint128.AddWrap64, (*big.Int).Add)
+		checkBinOp64(x, "-", y64, Uint128.SubWrap64, (*big.Int).Sub)
+		checkBinOp64(x, "*", y64, Uint128.MulWrap64, (*big.Int).Mul)
+		if y64 != 0 {
+			checkBinOp64(x, "/", y64, Uint128.Div64, (*big.Int).Div)
+			modfn := func(x Uint128, y uint64) Uint128 {
+				return From64(x.Mod64(y))
+			}
+			checkBinOp64(x, "%", y64, modfn, (*big.Int).Mod)
 		}
-		if !equalsBig(x.Sub64(y64), mod128(new(big.Int).Sub(xb, yb))) {
-			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Sub(xb, yb)), x.Sub64(y64))
-		}
-		if y64 != 0 && !equalsBig64(x.Mod64(y64), mod128(new(big.Int).Mod(xb, yb))) {
-			t.Fatalf("mismatch: %v-%v should equal %v, got %v", x, y, mod128(new(big.Int).Mod(xb, yb)), x.Mod(y))
-		}
-		if !equalsBig(x.Mul64(y64), mod128(new(big.Int).Mul(xb, yb))) {
-			t.Fatalf("mismatch: %v*%v should equal %v, got %v", x, y, mod128(new(big.Int).Mul(xb, yb)), x.Mul64(y64))
-		}
-		if y64 != 0 && !equalsBig(x.Div64(y64), mod128(new(big.Int).Div(xb, yb))) {
-			t.Fatalf("mismatch: %v/%v should equal %v, got %v", x, y, mod128(new(big.Int).Div(xb, yb)), x.Div64(y64))
-		}
-		if !equalsBig(x.And64(y64), mod128(new(big.Int).And(xb, yb))) {
-			t.Fatalf("mismatch: %v & %v should equal %v, got %v", x, y, mod128(new(big.Int).And(xb, yb)), x.And64(y64))
-		}
-		if !equalsBig(x.Or64(y64), mod128(new(big.Int).Or(xb, yb))) {
-			t.Fatalf("mismatch: %v | %v should equal %v, got %v", x, y, mod128(new(big.Int).Or(xb, yb)), x.Or64(y64))
-		}
-		if !equalsBig(x.Xor64(y64), mod128(new(big.Int).Xor(xb, yb))) {
-			t.Fatalf("mismatch: %v ^ %v should equal %v, got %v", x, y, mod128(new(big.Int).Xor(xb, yb)), x.Xor64(y64))
-		}
+		checkBinOp64(x, "&", y64, Uint128.And64, (*big.Int).And)
+		checkBinOp64(x, "|", y64, Uint128.Or64, (*big.Int).Or)
+		checkBinOp64(x, "^", y64, Uint128.Xor64, (*big.Int).Xor)
 	}
 }
 
 func TestOverflowAndUnderflow(t *testing.T) {
-	x := New(math.MaxUint64, math.MaxUint64)
+	x := Max
 	y := New(10, 10)
 	z := From64(10)
 	checkPanic := func(fn func(), msg string) {
@@ -173,12 +162,14 @@ func TestOverflowAndUnderflow(t *testing.T) {
 		}()
 		fn()
 	}
-	checkPanic(func() { _ = x.Add(y) }, "Value being added is greater than max allowable number, causes overflow")
-	checkPanic(func() { _ = x.Add64(10) }, "Value being added is greater than max allowable number, causes overflow")
-	checkPanic(func() { _ = y.Sub(x) }, "Value being subtracted is greater than max allowable number, causes underflow")
-	checkPanic(func() { _ = z.Sub64(math.MaxInt64) }, "Value being subtracted is greater than max allowable number, causes underflow")
-	checkPanic(func() { _ = x.Mul(y) }, "Value being multiplied causes overflow")
-	checkPanic(func() { _ = x.Mul64(math.MaxInt64) }, "Value being multiplied causes overflow")
+
+	// should panic
+	checkPanic(func() { _ = x.Add(y) }, "overflow")
+	checkPanic(func() { _ = x.Add64(10) }, "overflow")
+	checkPanic(func() { _ = y.Sub(x) }, "underflow")
+	checkPanic(func() { _ = z.Sub64(math.MaxInt64) }, "underflow")
+	checkPanic(func() { _ = x.Mul(y) }, "overflow")
+	checkPanic(func() { _ = x.Mul64(math.MaxInt64) }, "overflow")
 }
 
 func TestLeadingZeros(t *testing.T) {
