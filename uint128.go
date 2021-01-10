@@ -20,7 +20,9 @@ type Uint128 struct {
 
 // IsZero returns true if u == 0.
 func (u Uint128) IsZero() bool {
-	return u == Zero
+	// NOTE: we do not compare against Zero, because that is a global variable
+	// that could be modified.
+	return u == Uint128{}
 }
 
 // Equals returns true if u == v.
