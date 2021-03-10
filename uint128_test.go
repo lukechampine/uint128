@@ -43,6 +43,9 @@ func TestUint128(t *testing.T) {
 		if FromBytesBE(b) != x {
 			t.Fatal("FromBytesBE is not the inverse of PutBytesBE for", x)
 		}
+		if FromBytesLE(b) != x.ReverseBytes() {
+			t.Fatal("FromBytesLE is not the inverse of PutBytesBE.ReverseBytes for", x)
+		}
 
 		if !x.Equals(x) {
 			t.Fatalf("%v does not equal itself", x.Lo)
@@ -126,6 +129,30 @@ func TestArithmetic(t *testing.T) {
 			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, y, rb, r)
 		}
 	}
+	checkBits := func(x Uint128, k int) {
+		b := b128FromBig(x.Big())
+		if expected, got := b.LeadingZeros(), x.LeadingZeros(); got != expected {
+			t.Errorf("mismatch: %v LeadingZeros should equal %v, got %v", x, expected, got)
+		}
+		if expected, got := b.TrailingZeros(), x.TrailingZeros(); got != expected {
+			t.Errorf("mismatch: %v TrailingZeros should equal %v, got %v", x, expected, got)
+		}
+		if expected, got := b.OnesCount(), x.OnesCount(); got != expected {
+			t.Errorf("mismatch: %v OnesCount should equal %v, got %v", x, expected, got)
+		}
+		if expected, got := b.RotateRight(k), b128FromBig(x.RotateRight(k).Big()); !expected.Equals(got) {
+			t.Errorf("mismatch: %v RotateRight should equal %v, got %v", x, expected, got)
+		}
+		if expected, got := b.RotateLeft(k), b128FromBig(x.RotateLeft(k).Big()); !expected.Equals(got) {
+			t.Errorf("mismatch: %v RotateLeft should equal %v, got %v", x, expected, got)
+		}
+		if expected, got := b.Reverse(), b128FromBig(x.Reverse().Big()); !expected.Equals(got) {
+			t.Errorf("mismatch: %v RotateRight should equal %v, got %v", x, expected, got)
+		}
+		if expected, got := x.Big().BitLen(), x.Len(); expected != got {
+			t.Errorf("mismatch: %v BitLen should equal %v, got %v", x, expected, got)
+		}
+	}
 	for i := 0; i < 1000; i++ {
 		x, y, z := randUint128(), randUint128(), uint(randUint128().Lo&0xFF)
 		checkBinOp(x, "+", y, Uint128.AddWrap, (*big.Int).Add)
@@ -156,6 +183,10 @@ func TestArithmetic(t *testing.T) {
 		checkBinOp64(x, "&", y64, Uint128.And64, (*big.Int).And)
 		checkBinOp64(x, "|", y64, Uint128.Or64, (*big.Int).Or)
 		checkBinOp64(x, "^", y64, Uint128.Xor64, (*big.Int).Xor)
+
+		// check bits
+		checkBits(x, int(z))
+		checkBits(y, int(z))
 	}
 }
 
@@ -408,4 +439,78 @@ func BenchmarkString(b *testing.B) {
 			_ = xb.String()
 		}
 	})
+}
+
+// raw 128 bits
+type b128 [128]bool
+
+func b128FromBig(b *big.Int) b128 {
+	n := b.BitLen()
+	if n > 128 {
+		n = 128 // truncate
+	}
+
+	var out b128
+	for i := 0; i < n; i++ {
+		out[i] = (b.Bit(i) != 0)
+	}
+	return out
+}
+
+func (u b128) Equals(v b128) bool {
+	for i := range u {
+		if u[i] != v[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (u b128) LeadingZeros() int {
+	return u.Reverse().TrailingZeros()
+}
+
+func (u b128) TrailingZeros() int {
+	var out int
+	for i := range u {
+		if u[i] {
+			break
+		}
+		out++
+	}
+	return out
+}
+
+func (u b128) OnesCount() int {
+	var out int
+	for i := range u {
+		if u[i] {
+			out++
+		}
+	}
+	return out
+}
+
+func (u b128) RotateLeft(k int) b128 {
+	var out b128
+	for i := range u {
+		out[(i+k)%128] = u[i]
+	}
+	return out
+}
+
+func (u b128) RotateRight(k int) b128 {
+	var out b128
+	for i := range u {
+		out[i] = u[(i+k)%128]
+	}
+	return out
+}
+
+func (u b128) Reverse() b128 {
+	var out b128
+	for i := range u {
+		out[127-i] = u[i]
+	}
+	return out
 }
