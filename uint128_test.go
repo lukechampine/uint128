@@ -91,6 +91,23 @@ func TestArithmetic(t *testing.T) {
 		_, rem := i.QuoRem(i, new(big.Int).Lsh(big.NewInt(1), 128), new(big.Int))
 		return rem
 	}
+	checkBinOpX := func(x Uint128, op string, y Uint128, fn func(x, y Uint128) Uint128, fnb func(z, x, y *big.Int) *big.Int) {
+		t.Helper()
+		rb := fnb(new(big.Int), x.Big(), y.Big())
+		defer func() {
+			if r := recover(); r != nil {
+				if rb.BitLen() <= 128 && rb.Sign() >= 0 {
+					t.Fatalf("mismatch: %v%v%v should not panic, %v", x, op, y, rb)
+				}
+			} else if rb.BitLen() > 128 || rb.Sign() < 0 {
+				t.Fatalf("mismatch: %v%v%v should panic, %v", x, op, y, rb)
+			}
+		}()
+		r := fn(x, y)
+		if r.Big().Cmp(rb) != 0 {
+			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, y, rb, r)
+		}
+	}
 	checkBinOp := func(x Uint128, op string, y Uint128, fn func(x, y Uint128) Uint128, fnb func(z, x, y *big.Int) *big.Int) {
 		t.Helper()
 		r := fn(x, y)
@@ -107,6 +124,24 @@ func TestArithmetic(t *testing.T) {
 			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, n, rb, r)
 		}
 	}
+	checkBinOp64X := func(x Uint128, op string, y uint64, fn func(x Uint128, y uint64) Uint128, fnb func(z, x, y *big.Int) *big.Int) {
+		t.Helper()
+		xb, yb := x.Big(), From64(y).Big()
+		rb := fnb(new(big.Int), xb, yb)
+		defer func() {
+			if r := recover(); r != nil {
+				if rb.BitLen() <= 128 && rb.Sign() >= 0 {
+					t.Fatalf("mismatch: %v%v%v should not panic, %v", x, op, y, rb)
+				}
+			} else if rb.BitLen() > 128 || rb.Sign() < 0 {
+				t.Fatalf("mismatch: %v%v%v should panic, %v", x, op, y, rb)
+			}
+		}()
+		r := fn(x, y)
+		if r.Big().Cmp(rb) != 0 {
+			t.Fatalf("mismatch: %v%v%v should equal %v, got %v", x, op, y, rb, r)
+		}
+	}
 	checkBinOp64 := func(x Uint128, op string, y uint64, fn func(x Uint128, y uint64) Uint128, fnb func(z, x, y *big.Int) *big.Int) {
 		t.Helper()
 		xb, yb := x.Big(), From64(y).Big()
@@ -118,6 +153,9 @@ func TestArithmetic(t *testing.T) {
 	}
 	for i := 0; i < 1000; i++ {
 		x, y, z := randUint128(), randUint128(), uint(randUint128().Lo&0xFF)
+		checkBinOpX(x, "[+]", y, Uint128.Add, (*big.Int).Add)
+		checkBinOpX(x, "[-]", y, Uint128.Sub, (*big.Int).Sub)
+		checkBinOpX(x, "[*]", y, Uint128.Mul, (*big.Int).Mul)
 		checkBinOp(x, "+", y, Uint128.AddWrap, (*big.Int).Add)
 		checkBinOp(x, "-", y, Uint128.SubWrap, (*big.Int).Sub)
 		checkBinOp(x, "*", y, Uint128.MulWrap, (*big.Int).Mul)
@@ -133,6 +171,9 @@ func TestArithmetic(t *testing.T) {
 
 		// check 64-bit variants
 		y64 := y.Lo
+		checkBinOp64X(x, "[+]", y64, Uint128.Add64, (*big.Int).Add)
+		checkBinOp64X(x, "[-]", y64, Uint128.Sub64, (*big.Int).Sub)
+		checkBinOp64X(x, "[*]", y64, Uint128.Mul64, (*big.Int).Mul)
 		checkBinOp64(x, "+", y64, Uint128.AddWrap64, (*big.Int).Add)
 		checkBinOp64(x, "-", y64, Uint128.SubWrap64, (*big.Int).Sub)
 		checkBinOp64(x, "*", y64, Uint128.MulWrap64, (*big.Int).Mul)
@@ -169,6 +210,7 @@ func TestOverflowAndUnderflow(t *testing.T) {
 	checkPanic(func() { _ = y.Sub(x) }, "underflow")
 	checkPanic(func() { _ = z.Sub64(math.MaxInt64) }, "underflow")
 	checkPanic(func() { _ = x.Mul(y) }, "overflow")
+	checkPanic(func() { _ = New(0, 10).Mul(New(0, 10)) }, "overflow")
 	checkPanic(func() { _ = x.Mul64(math.MaxInt64) }, "overflow")
 }
 
