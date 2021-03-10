@@ -211,6 +211,7 @@ func TestOverflowAndUnderflow(t *testing.T) {
 	checkPanic(func() { _ = z.Sub64(math.MaxInt64) }, "underflow")
 	checkPanic(func() { _ = x.Mul(y) }, "overflow")
 	checkPanic(func() { _ = New(0, 10).Mul(New(0, 10)) }, "overflow")
+	checkPanic(func() { _ = New(0, 1).Mul(New(0, 1)) }, "overflow")
 	checkPanic(func() { _ = x.Mul64(math.MaxInt64) }, "overflow")
 }
 
