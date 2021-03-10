@@ -347,7 +347,14 @@ func (u Uint128) ReverseBytes() Uint128 {
 
 // Len returns the minimum number of bits required to represent u; the result is
 // 0 for u == 0.
+// Deprecated: use u.BitLen() instead!
 func (u Uint128) Len() int {
+	return u.BitLen()
+}
+
+// BitLen returns the minimum number of bits required to represent u; the result is
+// 0 for u == 0.
+func (u Uint128) BitLen() int {
 	return 128 - u.LeadingZeros()
 }
 
