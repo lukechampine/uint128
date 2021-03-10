@@ -172,14 +172,11 @@ func (u Uint128) SubWrap64(v uint64) Uint128 {
 	return Uint128{lo, hi}
 }
 
-// Mul returns u*v.
+// Mul returns u*v, panicking on overflow.
 func (u Uint128) Mul(v Uint128) Uint128 {
 	hi, lo := bits.Mul64(u.Lo, v.Lo)
 	p0, p1 := bits.Mul64(u.Hi, v.Lo)
 	p2, p3 := bits.Mul64(u.Lo, v.Hi)
-	// p4, p5 := bits.Mul64(u.Hi, v.Hi)
-	// p4 and p5 both are zero only
-	// if one u.Hi or v.Hi is zero
 	hi, c0 := bits.Add64(hi, p1, 0)
 	hi, c1 := bits.Add64(hi, p3, c0)
 	if (u.Hi != 0 && v.Hi != 0) || p0 != 0 || p2 != 0 || c1 != 0 {
