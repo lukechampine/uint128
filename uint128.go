@@ -373,8 +373,20 @@ func (u Uint128) String() string {
 
 // PutBytes stores u in b in little-endian order. It panics if len(b) < 16.
 func (u Uint128) PutBytes(b []byte) {
+	// little-endian order is used by default
+	u.PutBytesLE(b)
+}
+
+// PutBytesLE stores u in b in little-endian order. It panics if len(b) < 16.
+func (u Uint128) PutBytesLE(b []byte) {
 	binary.LittleEndian.PutUint64(b[:8], u.Lo)
 	binary.LittleEndian.PutUint64(b[8:], u.Hi)
+}
+
+// PutBytesBE stores u in b in big-endian order. It panics if len(b) < 16.
+func (u Uint128) PutBytesBE(b []byte) {
+	binary.BigEndian.PutUint64(b[:8], u.Hi)
+	binary.BigEndian.PutUint64(b[8:], u.Lo)
 }
 
 // Big returns u as a *big.Int.
@@ -395,11 +407,25 @@ func From64(v uint64) Uint128 {
 	return New(v, 0)
 }
 
-// FromBytes converts b to a Uint128 value.
+// FromBytes converts b to a Uint128 value (little-endian order).
 func FromBytes(b []byte) Uint128 {
+	// little-endian order is used by default
+	return FromBytesLE(b)
+}
+
+// FromBytesLE converts b to a Uint128 value (little-endian order).
+func FromBytesLE(b []byte) Uint128 {
 	return New(
 		binary.LittleEndian.Uint64(b[:8]),
 		binary.LittleEndian.Uint64(b[8:]),
+	)
+}
+
+// FromBytesBE converts b to a Uint128 value (big-endian order).
+func FromBytesBE(b []byte) Uint128 {
+	return New(
+		binary.BigEndian.Uint64(b[8:]),
+		binary.BigEndian.Uint64(b[:8]),
 	)
 }
 

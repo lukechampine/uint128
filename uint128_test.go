@@ -29,9 +29,19 @@ func TestUint128(t *testing.T) {
 		}
 
 		b := make([]byte, 16)
-		x.PutBytes(b)
+		x.PutBytes(b) // also check PutBytesLE and FromBytesLE
 		if FromBytes(b) != x {
 			t.Fatal("FromBytes is not the inverse of PutBytes for", x)
+		}
+		for i, n := 0, len(b); i < n/2; i++ { // reverse byte order manually:
+			b[i], b[n-i-1] = b[n-i-1], b[i] // little-endian to big-endian
+		}
+		if FromBytesBE(b) != x {
+			t.Fatal("FromBytesBE is not the inverse of reverse(PutBytes) for", x)
+		}
+		x.PutBytesBE(b)
+		if FromBytesBE(b) != x {
+			t.Fatal("FromBytesBE is not the inverse of PutBytesBE for", x)
 		}
 
 		if !x.Equals(x) {
