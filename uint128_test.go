@@ -287,6 +287,12 @@ func TestString(t *testing.T) {
 		if x.String() != x.Big().String() {
 			t.Fatalf("mismatch:\n%v !=\n%v", x.String(), x.Big().String())
 		}
+		y, err := FromString(x.String())
+		if err != nil {
+			t.Fatal(err)
+		} else if !y.Equals(x) {
+			t.Fatalf("mismatch:\n%v !=\n%v", x.String(), y.String())
+		}
 	}
 	// Test 0 string
 	if Zero.String() != "0" {
@@ -295,6 +301,13 @@ func TestString(t *testing.T) {
 	// Test Max string
 	if Max.String() != "340282366920938463463374607431768211455" {
 		t.Fatalf(`Max.String() should be "0", got %q`, Max.String())
+	}
+	// Test parsing invalid strings
+	if _, err := FromString("-1"); err == nil {
+		t.Fatal("expected error when parsing -1")
+	}
+	if _, err := FromString("340282366920938463463374607431768211456"); err == nil {
+		t.Fatal("expected error when parsing max+1")
 	}
 }
 
