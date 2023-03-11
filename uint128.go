@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/big"
 	"math/bits"
+	"net"
 )
 
 // Zero is a zero-valued uint128.
@@ -379,6 +380,12 @@ func (u Uint128) PutBytes(b []byte) {
 	binary.LittleEndian.PutUint64(b[8:], u.Hi)
 }
 
+// PutNetIP stores u in ip in network (big-endian) order. It panics if len(ip) < 16.
+func (u Uint128) PutNetIP(ip net.IP) {
+	binary.BigEndian.PutUint64(ip[:8], u.Hi)
+	binary.BigEndian.PutUint64(ip[8:], u.Lo)
+}
+
 // Big returns u as a *big.Int.
 func (u Uint128) Big() *big.Int {
 	i := new(big.Int).SetUint64(u.Hi)
@@ -437,4 +444,12 @@ func FromBig(i *big.Int) (u Uint128) {
 func FromString(s string) (u Uint128, err error) {
 	_, err = fmt.Sscan(s, &u)
 	return
+}
+
+// FromNetIP converts net.IP to a Uint128 value.
+func FromNetIP(ip net.IP) Uint128 {
+	return New(
+		binary.BigEndian.Uint64(ip[8:]),
+		binary.BigEndian.Uint64(ip[:8]),
+	)
 }
