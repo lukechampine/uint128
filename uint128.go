@@ -42,10 +42,9 @@ func (u Uint128) Equals64(v uint64) bool {
 
 // Cmp compares u and v and returns:
 //
-//   -1 if u <  v
-//    0 if u == v
-//   +1 if u >  v
-//
+//	-1 if u <  v
+//	 0 if u == v
+//	+1 if u >  v
 func (u Uint128) Cmp(v Uint128) int {
 	if u == v {
 		return 0
@@ -58,10 +57,9 @@ func (u Uint128) Cmp(v Uint128) int {
 
 // Cmp64 compares u and v and returns:
 //
-//   -1 if u <  v
-//    0 if u == v
-//   +1 if u >  v
-//
+//	-1 if u <  v
+//	 0 if u == v
+//	+1 if u >  v
 func (u Uint128) Cmp64(v uint64) int {
 	if u.Hi == 0 && u.Lo == v {
 		return 0
@@ -406,6 +404,13 @@ func (u *Uint128) Scan(s fmt.ScanState, ch rune) error {
 	u.Lo = i.Uint64()
 	u.Hi = i.Rsh(i, 64).Uint64()
 	return nil
+}
+
+// Clones the Uint128 value.
+func (u *Uint128) Clone() *Uint128 {
+	lo := u.Lo
+	hi := u.Hi
+	return &Uint128{lo, hi}
 }
 
 // New returns the Uint128 value (lo,hi).
