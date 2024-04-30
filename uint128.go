@@ -42,10 +42,9 @@ func (u Uint128) Equals64(v uint64) bool {
 
 // Cmp compares u and v and returns:
 //
-//   -1 if u <  v
-//    0 if u == v
-//   +1 if u >  v
-//
+//	-1 if u <  v
+//	 0 if u == v
+//	+1 if u >  v
 func (u Uint128) Cmp(v Uint128) int {
 	if u == v {
 		return 0
@@ -58,10 +57,9 @@ func (u Uint128) Cmp(v Uint128) int {
 
 // Cmp64 compares u and v and returns:
 //
-//   -1 if u <  v
-//    0 if u == v
-//   +1 if u >  v
-//
+//	-1 if u <  v
+//	 0 if u == v
+//	+1 if u >  v
 func (u Uint128) Cmp64(v uint64) int {
 	if u.Hi == 0 && u.Lo == v {
 		return 0
@@ -451,4 +449,44 @@ func FromBig(i *big.Int) (u Uint128) {
 func FromString(s string) (u Uint128, err error) {
 	_, err = fmt.Sscan(s, &u)
 	return
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (u Uint128) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (u *Uint128) UnmarshalText(text []byte) error {
+	str := processString(string(text))
+	v, err := FromString(str)
+	if err != nil {
+		return err
+	}
+	*u = v
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler.
+func (u Uint128) MarshalJSON() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (u *Uint128) UnmarshalJSON(data []byte) error {
+	return u.UnmarshalText(data)
+}
+
+// processString removes leading and trailing quotes from s.
+func processString(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	if s[0] == '"' || s[0] == '\'' {
+		s = s[1:]
+	}
+	if s[len(s)-1] == '"' || s[len(s)-1] == '\'' {
+		s = s[:len(s)-1]
+	}
+	return s
 }

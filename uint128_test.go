@@ -1,8 +1,11 @@
 package uint128
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/json"
+	"encoding/xml"
 	"math"
 	"math/big"
 	"net"
@@ -485,5 +488,97 @@ func TestFromBytesBE(t *testing.T) {
 	}
 	if u1 != u2 {
 		t.Fatalf("mismatch:\n%v !=\n%v", u1, u2)
+	}
+}
+
+type testStruct struct {
+	Foo Uint128
+	Bar *Uint128
+}
+
+func TestMarshalText(t *testing.T) {
+	test := testStruct{
+		Foo: From64(math.MaxUint64),
+		Bar: &Max,
+	}
+	data, err := xml.Marshal(test)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("xml: %s", string(data))
+	var test2 testStruct
+	err = xml.Unmarshal(data, &test2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !test2.Foo.Equals(test.Foo) || !test2.Bar.Equals(*test.Bar) {
+		t.Fatalf("mismatch:\n%v !=\n%v", test2, test)
+	}
+}
+
+func TestJsonMarshal(t *testing.T) {
+	foo := From64(1234567890)
+	b, err := json.Marshal(foo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(b, []byte("1234567890")) {
+		t.Fatalf("mismatch:\n%v !=\n%v", b, []byte("1234567890"))
+	}
+	t.Logf("foo json: %s", string(b))
+	//unmarshal
+	var foo2 Uint128
+	err = json.Unmarshal(b, &foo2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !foo2.Equals(foo) {
+		t.Fatalf("mismatch:\n%v !=\n%v", foo2, foo)
+	}
+	maxj, err := json.Marshal(Max)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("max json: %s", string(maxj))
+	if !bytes.Equal(maxj, []byte(Max.String())) {
+		t.Fatalf("mismatch:\n%v !=\n%v", maxj, []byte(Max.String()))
+	}
+	//unmarshal
+	var max2 Uint128
+	err = json.Unmarshal(maxj, &max2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !max2.Equals(Max) {
+		t.Fatalf("mismatch:\n%v !=\n%v", max2, Max)
+	}
+	test1 := testStruct{Foo: foo, Bar: &Max}
+	b, err = json.Marshal(test1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("struct json: %s", string(b))
+	if !bytes.Contains(b, []byte(Max.String())) && !bytes.Contains(b, []byte("1234567890")) {
+		t.Fatal("struct json error")
+	}
+	//unmarshal
+	var test2 testStruct
+	err = json.Unmarshal(b, &test2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !test2.Foo.Equals(foo) || !test2.Bar.Equals(Max) {
+		t.Fatalf("mismatch:\n%v !=\n%v", test2, test1)
+	}
+}
+func TestJsonUnmarshalString(t *testing.T) {
+	txt := "{\"Foo\":1234567890,\"Bar\":\"340282366920938463463374607431768211455\"}"
+	var test2 testStruct
+	err := json.Unmarshal([]byte(txt), &test2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !test2.Foo.Equals(From64(1234567890)) || !test2.Bar.Equals(Max) {
+		t.Fatalf("mismatch:\n%v !=\n%v", test2, test2)
 	}
 }
