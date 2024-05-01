@@ -42,10 +42,9 @@ func (u Uint128) Equals64(v uint64) bool {
 
 // Cmp compares u and v and returns:
 //
-//   -1 if u <  v
-//    0 if u == v
-//   +1 if u >  v
-//
+//	-1 if u <  v
+//	 0 if u == v
+//	+1 if u >  v
 func (u Uint128) Cmp(v Uint128) int {
 	if u == v {
 		return 0
@@ -58,10 +57,9 @@ func (u Uint128) Cmp(v Uint128) int {
 
 // Cmp64 compares u and v and returns:
 //
-//   -1 if u <  v
-//    0 if u == v
-//   +1 if u >  v
-//
+//	-1 if u <  v
+//	 0 if u == v
+//	+1 if u >  v
 func (u Uint128) Cmp64(v uint64) int {
 	if u.Hi == 0 && u.Lo == v {
 		return 0
@@ -379,6 +377,12 @@ func (u Uint128) PutBytes(b []byte) {
 	binary.LittleEndian.PutUint64(b[8:], u.Hi)
 }
 
+// PutBytesBE stores u in b in big-endian order. It panics if len(ip) < 16.
+func (u Uint128) PutBytesBE(b []byte) {
+	binary.BigEndian.PutUint64(b[:8], u.Hi)
+	binary.BigEndian.PutUint64(b[8:], u.Lo)
+}
+
 // Big returns u as a *big.Int.
 func (u Uint128) Big() *big.Int {
 	i := new(big.Int).SetUint64(u.Hi)
@@ -420,6 +424,14 @@ func FromBytes(b []byte) Uint128 {
 	)
 }
 
+// FromBytesBE converts big-endian b to a Uint128 value.
+func FromBytesBE(b []byte) Uint128 {
+	return New(
+		binary.BigEndian.Uint64(b[8:]),
+		binary.BigEndian.Uint64(b[:8]),
+	)
+}
+
 // FromBig converts i to a Uint128 value. It panics if i is negative or
 // overflows 128 bits.
 func FromBig(i *big.Int) (u Uint128) {
@@ -437,4 +449,15 @@ func FromBig(i *big.Int) (u Uint128) {
 func FromString(s string) (u Uint128, err error) {
 	_, err = fmt.Sscan(s, &u)
 	return
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (u Uint128) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (u *Uint128) UnmarshalText(b []byte) error {
+	_, err := fmt.Sscan(string(b), u)
+	return err
 }

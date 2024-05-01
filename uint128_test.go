@@ -3,8 +3,11 @@ package uint128
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/json"
+	"encoding/xml"
 	"math"
 	"math/big"
+	"net"
 	"testing"
 )
 
@@ -454,4 +457,76 @@ func BenchmarkString(b *testing.B) {
 			_ = xb.String()
 		}
 	})
+}
+
+func TestPutBytesBE(t *testing.T) {
+	ipa := "2001:db8::1"
+	ips := "42540766411282592856903984951653826561"
+
+	u, err := FromString(ips)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ip := net.IPv6zero
+	u.PutBytesBE(ip)
+
+	if ip.String() != ipa {
+		t.Fatalf("mismatch:\n%v !=\n%v", ip, ipa)
+	}
+}
+
+func TestFromBytesBE(t *testing.T) {
+	ip := net.ParseIP("2001:db8::2")
+	ips := "42540766411282592856903984951653826562"
+
+	u1 := FromBytesBE(ip)
+	u2, err := FromString(ips)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u1 != u2 {
+		t.Fatalf("mismatch:\n%v !=\n%v", u1, u2)
+	}
+}
+
+func TestMarshalText(t *testing.T) {
+	type testStruct struct {
+		Foo Uint128
+		Bar *Uint128
+	}
+
+	test := testStruct{
+		Foo: From64(math.MaxUint64),
+		Bar: &Max,
+	}
+	b, err := xml.Marshal(test)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var test2 testStruct
+	err = xml.Unmarshal(b, &test2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !test2.Foo.Equals(test.Foo) || !test2.Bar.Equals(*test.Bar) {
+		t.Fatalf("mismatch:\n%v !=\n%v", test2, test)
+	}
+
+	// json should also work
+	b, err = json.Marshal(test)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exp := `{"Foo":"18446744073709551615","Bar":"340282366920938463463374607431768211455"}`; string(b) != exp {
+		t.Fatalf("mismatch:\n%s !=\n%s", b, exp)
+	}
+	test2 = testStruct{}
+	err = json.Unmarshal(b, &test2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !test2.Foo.Equals(test.Foo) || !test2.Bar.Equals(*test.Bar) {
+		t.Fatalf("mismatch:\n%v !=\n%v", test2, test)
+	}
 }
