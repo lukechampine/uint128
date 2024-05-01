@@ -457,36 +457,7 @@ func (u Uint128) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (u *Uint128) UnmarshalText(text []byte) error {
-	str := processString(string(text))
-	v, err := FromString(str)
-	if err != nil {
-		return err
-	}
-	*u = v
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler.
-func (u Uint128) MarshalJSON() ([]byte, error) {
-	return []byte(u.String()), nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (u *Uint128) UnmarshalJSON(data []byte) error {
-	return u.UnmarshalText(data)
-}
-
-// processString removes leading and trailing quotes from s.
-func processString(s string) string {
-	if len(s) == 0 {
-		return ""
-	}
-	if s[0] == '"' || s[0] == '\'' {
-		s = s[1:]
-	}
-	if s[len(s)-1] == '"' || s[len(s)-1] == '\'' {
-		s = s[:len(s)-1]
-	}
-	return s
+func (u *Uint128) UnmarshalText(b []byte) error {
+	_, err := fmt.Sscan(string(b), u)
+	return err
 }
