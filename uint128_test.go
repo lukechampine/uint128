@@ -490,6 +490,42 @@ func TestFromBytesBE(t *testing.T) {
 	}
 }
 
+func TestAppendBytes(t *testing.T) {
+	u := randUint128()
+	v := randUint128()
+
+	b := u.AppendBytes(nil)
+	b = v.AppendBytes(b)
+
+	if len(b) != 2*16 {
+		t.Fatal("AppendBytes twice should append 32 bytes, got:", len(b))
+	}
+	if FromBytes(b) != u {
+		t.Fatal("FromBytes is not the inverse of AppendBytes for", u)
+	}
+	if FromBytes(b[16:]) != v {
+		t.Fatal("FromBytes is not the inverse of AppendBytes for", v)
+	}
+}
+
+func TestAppendBytesBE(t *testing.T) {
+	u := randUint128()
+	v := randUint128()
+
+	b := u.AppendBytesBE(nil)
+	b = v.AppendBytesBE(b)
+
+	if len(b) != 2*16 {
+		t.Fatal("AppendBytesBE twice should append 32 bytes, got:", len(b))
+	}
+	if FromBytesBE(b) != u {
+		t.Fatal("FromBytesBE is not the inverse of AppendBytesBE for", u)
+	}
+	if FromBytesBE(b[16:]) != v {
+		t.Fatal("FromBytesBE is not the inverse of AppendBytesBE for", v)
+	}
+}
+
 func TestMarshalText(t *testing.T) {
 	type testStruct struct {
 		Foo Uint128

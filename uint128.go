@@ -383,6 +383,20 @@ func (u Uint128) PutBytesBE(b []byte) {
 	binary.BigEndian.PutUint64(b[8:], u.Lo)
 }
 
+// AppendBytes appends u to b in little-endian order and returns the extended buffer.
+func (u Uint128) AppendBytes(b []byte) []byte {
+	b = binary.LittleEndian.AppendUint64(b, u.Lo)
+	b = binary.LittleEndian.AppendUint64(b, u.Hi)
+	return b
+}
+
+// AppendBytesBE appends u to b in big-endian order and returns the extended buffer.
+func (u Uint128) AppendBytesBE(b []byte) []byte {
+	b = binary.BigEndian.AppendUint64(b, u.Hi)
+	b = binary.BigEndian.AppendUint64(b, u.Lo)
+	return b
+}
+
 // Big returns u as a *big.Int.
 func (u Uint128) Big() *big.Int {
 	i := new(big.Int).SetUint64(u.Hi)
